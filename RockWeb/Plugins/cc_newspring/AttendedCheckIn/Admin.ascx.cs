@@ -128,7 +128,8 @@ namespace RockWeb.Blocks.CheckIn.Attended
             var checkInDeviceTypeGuid = DefinedValueCache.Read( Rock.SystemGuid.DefinedValue.DEVICE_TYPE_CHECKIN_KIOSK ).Guid;
             var deviceList = new DeviceService( new RockContext() ).GetByDeviceTypeGuid( checkInDeviceTypeGuid ).ToList();
 
-            lblInfo.Text = string.Format( "Device IP: {0} {1} Name: {2}", ipAddress, Environment.NewLine, System.Net.Dns.GetHostEntry( ipAddress ).HostName );
+            var dnsAddress = System.Net.Dns.GetHostEntry( ipAddress );
+            lblInfo.Text = string.Format( "Device IP: {0} {1} Name: {2}", ipAddress, Environment.NewLine, dnsAddress != null ? dnsAddress.HostName : "Unknown" );
 
             if ( device != null )
             {
