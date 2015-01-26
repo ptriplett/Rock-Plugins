@@ -92,6 +92,7 @@ namespace RockWeb.Blocks.CheckIn.Attended
                 {
                     maWarning.Show( "This device has not been set up for check-in.", ModalAlertType.Warning );
                     lbOk.Visible = false;
+                    pnlHeader.Update();
                     return;
                 }
 
@@ -112,15 +113,14 @@ namespace RockWeb.Blocks.CheckIn.Attended
             // match kiosk by ip/name.
             string ipAddress;
             bool skipDeviceNameLookup;
-#if DEBUG
+
             // debug mode, use the local IP
-            ipAddress = Request.ServerVariables["LOCAL_ADDR"];
-            skipDeviceNameLookup = true;
-#else
+            //ipAddress = Request.ServerVariables["LOCAL_ADDR"];
+            //skipDeviceNameLookup = true;
+
             // production mode, use the remote IP
             ipAddress = Request.ServerVariables["REMOTE_ADDR"];
             skipDeviceNameLookup = false;
-#endif
 
             var checkInDeviceTypeId = DefinedValueCache.Read( Rock.SystemGuid.DefinedValue.DEVICE_TYPE_CHECKIN_KIOSK ).Id;
             var device = new DeviceService( new RockContext() ).GetByIPAddress( ipAddress, checkInDeviceTypeId, skipDeviceNameLookup );
@@ -163,11 +163,18 @@ namespace RockWeb.Blocks.CheckIn.Attended
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void lbOk_Click( object sender, EventArgs e )
         {
-            var groupTypeIds = new List<int>();
-
-            if ( !string.IsNullOrEmpty( hfGroupTypes.Value ) )
+            if ( CurrentCheckInState == null )
             {
-                groupTypeIds = hfGroupTypes.Value.SplitDelimitedValues().Select( int.Parse ).Distinct().ToList();
+                maWarning.Show( "Check-in state timed out.  Please try again.", ModalAlertType.Warning );
+                pnlHeader.Update();
+                return;
+            }
+
+            var groupTypeIds = new List<int>();
+            var selectedGroupTypeIds = hfGroupTypes.Value.SplitDelimitedValues().Select( int.Parse ).Distinct().ToList();
+            if ( CurrentCheckInState.Kiosk.KioskGroupTypes.Any( gt => selectedGroupTypeIds.Contains( gt.GroupType.Id ) ) )
+            {
+                groupTypeIds = selectedGroupTypeIds;
             }
             else
             {
@@ -339,6 +346,34 @@ namespace RockWeb.Blocks.CheckIn.Attended
         #region Internal Methods
 
         /// <summary>
+        /// Binds the group types.
+        /// </summary>
+        private void BindGroupTypes()
+        {
+            BindGroupTypes( string.Empty );
+        }
+
+        /// <summary>
+        /// Binds the group types.
+        /// </summary>
+        /// <param name="selectedValues">The selected values.</param>
+        private void BindGroupTypes( string selectedGroupTypes )
+        {
+            if ( CurrentKioskId > 0 )
+            {
+                var kiosk = new DeviceService( new RockContext() ).Get( (int)CurrentKioskId );
+                if ( kiosk != null )
+                {
+                    var groupTypes = GetDeviceGroupTypes( kiosk.Id );
+                    hfGroupTypes.Value = selectedGroupTypes;
+
+                    repMinistry.DataSource = groupTypes;
+                    repMinistry.DataBind();
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the device group types.
         /// </summary>
         /// <param name="deviceId">The device identifier.</param>
@@ -369,38 +404,6 @@ namespace RockWeb.Blocks.CheckIn.Attended
             }
 
             return groupTypes.Select( g => g.Value ).ToList();
-        }
-
-        /// <summary>
-        /// Binds the group types.
-        /// </summary>
-        private void BindGroupTypes()
-        {
-            BindGroupTypes( string.Empty );
-        }
-
-        /// <summary>
-        /// Binds the group types.
-        /// </summary>
-        /// <param name="selectedValues">The selected values.</param>
-        private void BindGroupTypes( string selectedGroupTypes )
-        {
-            if ( CurrentKioskId > 0 )
-            {
-                var kiosk = new DeviceService( new RockContext() ).Get( (int)CurrentKioskId );
-                if ( kiosk != null )
-                {
-                    // var groupTypes = kiosk.Locations.SelectMany( l => l.GroupLocations
-                    //     .Select( gl => gl.Group.GroupType ) ).Distinct().ToList();
-
-                    var groupTypes = GetDeviceGroupTypes( kiosk.Id );
-
-                    hfGroupTypes.Value = selectedGroupTypes;
-
-                    repMinistry.DataSource = groupTypes;
-                    repMinistry.DataBind();
-                }
-            }
         }
 
         /// <summary>

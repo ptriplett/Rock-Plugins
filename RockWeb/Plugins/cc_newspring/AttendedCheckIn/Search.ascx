@@ -3,7 +3,7 @@
 <asp:UpdatePanel ID="pnlContent" runat="server" UpdateMode="Conditional">
     <ContentTemplate>
 
-        <asp:PlaceHolder ID="phScript" runat="server"></asp:PlaceHolder>
+        <asp:PlaceHolder ID="phScript" runat="server" />
         <Rock:ModalAlert ID="maWarning" runat="server" />
 
         <asp:Panel ID="pnlSearch" runat="server" DefaultButton="lbSearch" CssClass="attended">
@@ -16,7 +16,7 @@
                 </div>
 
                 <div class="col-xs-8">
-                    <Rock:RockTextBox ID="tbSearchBox" MaxLength="50" CssClass="checkin-phone-entry" runat="server" Label="" TabIndex="0" Placeholder="Search..." />
+                    <Rock:RockTextBox ID="tbSearchBox" MaxLength="50" CssClass="checkin-phone-entry" runat="server" Label="" TabIndex="0" />
                     <asp:LinkButton runat="server" OnClick="lbSearch_Click">
                     <span class="fa fa-search"></span>
                     </asp:LinkButton>
@@ -56,11 +56,6 @@
                     </asp:Panel>
                 </div>
                 <div class="col-xs-3"></div>
-            </div>
-            <div class="row checkin-footer at-the-bottom">
-                <div class="col-xs-3">
-                    <Rock:BootstrapButton ID="lbAdmin" runat="server" CssClass="btn btn-primary" OnClick="lbAdmin_Click" EnableViewState="false" Visible="false" />
-                </div>
             </div>
         </asp:Panel>
     </ContentTemplate>

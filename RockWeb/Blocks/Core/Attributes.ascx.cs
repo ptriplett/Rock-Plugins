@@ -115,7 +115,7 @@ namespace RockWeb.Blocks.Core
 
             if ( _canConfigure )
             {
-                rGrid.DataKeyNames = new string[] { "id" };
+                rGrid.DataKeyNames = new string[] { "Id" };
                 rGrid.Actions.ShowAdd = true;
 
                 rGrid.Actions.AddClick += rGrid_Add;
@@ -287,7 +287,7 @@ namespace RockWeb.Blocks.Core
         /// <param name="e">The <see cref="RowEventArgs" /> instance containing the event data.</param>
         protected void rGrid_Edit( object sender, RowEventArgs e )
         {
-            ShowEdit( (int)rGrid.DataKeys[e.RowIndex]["id"] );
+            ShowEdit( e.RowKeyId );
         }
 
         /// <summary>
@@ -299,11 +299,11 @@ namespace RockWeb.Blocks.Core
         {
             if ( _displayValueEdit )
             {
-                ShowEditValue( (int)rGrid.DataKeys[e.RowIndex]["id"], true );
+                ShowEditValue( e.RowKeyId, true );
             }
             else
             {
-                ShowEdit( (int)rGrid.DataKeys[e.RowIndex]["id"] );
+                ShowEdit( e.RowKeyId );
             }
         }
 
@@ -317,7 +317,7 @@ namespace RockWeb.Blocks.Core
             var rockContext = new RockContext();
             var attributeService = new Rock.Model.AttributeService( rockContext );
 
-            Rock.Model.Attribute attribute = attributeService.Get( (int)rGrid.DataKeys[e.RowIndex]["id"] );
+            Rock.Model.Attribute attribute = attributeService.Get( e.RowKeyId );
             if ( attribute != null )
             {
                 Rock.Web.Cache.AttributeCache.Flush( attribute.Id );
@@ -400,11 +400,11 @@ namespace RockWeb.Blocks.Core
                         var attributeValue = attributeValueService.GetByAttributeIdAndEntityId( attributeId, _entityId );
                         if ( attributeValue != null && !string.IsNullOrWhiteSpace( attributeValue.Value ) )
                         {
-                            lValue.Text = fieldType.Field.FormatValue( lValue, attributeValue.Value, attribute.QualifierValues, true );
+                            lValue.Text = fieldType.Field.FormatValueAsHtml( lValue, attributeValue.Value, attribute.QualifierValues, true );
                         }
                         else
                         {
-                            lValue.Text = string.Format( "<span class='text-muted'>{0}</span>", fieldType.Field.FormatValue( lValue, attribute.DefaultValue, attribute.QualifierValues, true ) );
+                            lValue.Text = string.Format( "<span class='text-muted'>{0}</span>", fieldType.Field.FormatValueAsHtml( lValue, attribute.DefaultValue, attribute.QualifierValues, true ) );
                         }
                     }
                 }
@@ -413,7 +413,7 @@ namespace RockWeb.Blocks.Core
                     Literal lDefaultValue = e.Row.FindControl( "lDefaultValue" ) as Literal;
                     if ( lDefaultValue != null )
                     {
-                        lDefaultValue.Text = fieldType.Field.FormatValue( lDefaultValue, attribute.DefaultValue, attribute.QualifierValues, true );
+                        lDefaultValue.Text = fieldType.Field.FormatValueAsHtml( lDefaultValue, attribute.DefaultValue, attribute.QualifierValues, true );
                     }
                 }
             }

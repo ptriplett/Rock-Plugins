@@ -56,9 +56,7 @@ namespace RockWeb.Blocks.CheckIn.Attended
             {
                 if ( CurrentKioskId == null || CurrentGroupTypeIds == null || CurrentCheckInState.Kiosk == null )
                 {
-                    var queryParams = new Dictionary<string, string>();
-                    queryParams.Add( "back", "true" );
-                    NavigateToLinkedPage( "AdminPage", queryParams );
+                    NavigateToHomePage();
                 }
                 else
                 {
@@ -68,12 +66,9 @@ namespace RockWeb.Blocks.CheckIn.Attended
                         // not active yet, display next active time
                         return;
                     }
-                    else if ( CurrentCheckInState.CheckIn.SearchType != null || CurrentCheckInState.CheckIn.Families.Count > 0 )
+                    else if ( CurrentCheckInState != null && !string.IsNullOrWhiteSpace( CurrentCheckInState.CheckIn.SearchValue ) )
                     {
-                        if ( !string.IsNullOrWhiteSpace( CurrentCheckInState.CheckIn.SearchValue ) )
-                        {
-                            tbSearchBox.Text = CurrentCheckInState.CheckIn.SearchValue;
-                        }
+                        tbSearchBox.Text = CurrentCheckInState.CheckIn.SearchValue;
                     }
 
                     string script = string.Format( @"
@@ -94,12 +89,11 @@ namespace RockWeb.Blocks.CheckIn.Attended
                     }
 
                     tbSearchBox.Focus();
-                    SaveState();
                 }
             }
         }
 
-        #endregion
+        #endregion Control Methods
 
         #region Edit Events
 
@@ -131,17 +125,7 @@ namespace RockWeb.Blocks.CheckIn.Attended
                     }
 
                     CurrentCheckInState.CheckIn.SearchValue = tbSearchBox.Text;
-                    var errors = new List<string>();
-                    if ( ProcessActivity( "Family Search", out errors ) )
-                    {
-                        SaveState();
-                        NavigateToNextPage();
-                    }
-                    else
-                    {
-                        string errorMsg = "<ul><li>" + errors.AsDelimited( "</li><li>" ) + "</li></ul>";
-                        maWarning.Show( errorMsg, Rock.Web.UI.Controls.ModalAlertType.Warning );
-                    }
+                    ProcessSelection( maWarning );
                 }
                 else
                 {
@@ -150,13 +134,11 @@ namespace RockWeb.Blocks.CheckIn.Attended
                         : string.Format( "<ul><li>Please enter at least {0} characters</li></ul>", minLength );
 
                     maWarning.Show( errorMsg, ModalAlertType.Warning );
-                    return;
                 }
             }
             else
             {
                 maWarning.Show( "This kiosk is not currently active.", ModalAlertType.Warning );
-                return;
             }
         }
 
@@ -167,32 +149,17 @@ namespace RockWeb.Blocks.CheckIn.Attended
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void lbBack_Click( object sender, EventArgs e )
         {
-            bool selectedFamilyExists = CurrentCheckInState.CheckIn.Families.Where( f => f.Selected ).Any();
+            //bool selectedFamilyExists = CurrentCheckInState.CheckIn.Families.Where( f => f.Selected ).Any();
+            //if ( !selectedFamilyExists )
+            //{
+            //    var queryParams = new Dictionary<string, string>();
+            //    queryParams.Add( "back", "true" );
+            //    NavigateToLinkedPage( "AdminPage", queryParams );
+            //}
 
-            if ( !selectedFamilyExists )
-            {
-                var queryParams = new Dictionary<string, string>();
-                queryParams.Add( "back", "true" );
-                NavigateToLinkedPage( "AdminPage", queryParams );
-            }
-            else
-            {
-                NavigateToPreviousPage();
-            }
+            NavigateToPreviousPage();
         }
 
-        /// <summary>
-        /// Handles the Click event of the lbAdmin control.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        protected void lbAdmin_Click( object sender, EventArgs e )
-        {
-            var queryParams = new Dictionary<string, string>();
-            queryParams.Add( "back", "true" );
-            NavigateToLinkedPage( "AdminPage", queryParams );
-        }
-
-        #endregion
+        #endregion Edit Events
     }
 }

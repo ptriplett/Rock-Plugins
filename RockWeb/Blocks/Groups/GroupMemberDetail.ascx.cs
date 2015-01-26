@@ -34,7 +34,6 @@ namespace RockWeb.Blocks.Groups
     [DisplayName( "Group Member Detail" )]
     [Category( "Groups" )]
     [Description( "Displays the details of the given group member for editing role, status, etc." )]
-    [LinkedPage("Person Profile Page", "The person profile page to link to.")]
     public partial class GroupMemberDetail : RockBlock, IDetailBlock
     {
         #region Control Methods
@@ -141,7 +140,7 @@ namespace RockWeb.Blocks.Groups
                         // if so, don't add and show error message
                         var person = new PersonService( rockContext ).Get( (int)ppGroupMemberPerson.PersonId );
 
-                        nbErrorMessage.Title = "Person already added";
+                        nbErrorMessage.Title = "Person Exists";
                         nbErrorMessage.Text = string.Format( 
                             "{0} already belongs to the {1} role for this {2}, and cannot be added again with the same role. <a href=\"/page/{3}?groupMemberId={4}\">Click here</a> to view existing membership.",
                             person.FullName,
@@ -190,8 +189,6 @@ namespace RockWeb.Blocks.Groups
                 // show error if above max.. do not proceed
                 if ( roleMembershipAboveMax )
                 {
-                    var person = new PersonService( rockContext ).Get( (int)ppGroupMemberPerson.PersonId );
-
                     nbErrorMessage.Title = string.Format( "Maximum {0} Exceeded", role.Name.Pluralize() );
                     nbErrorMessage.Text = string.Format( 
                         "<br />The number of {0} for this {1} is at or above its maximum allowed limit of {2:N0} active {3}.",
@@ -292,27 +289,26 @@ namespace RockWeb.Blocks.Groups
         /// <param name="groupId">The group id.</param>
         public void ShowDetail( int groupMemberId, int? groupId )
         {
+            // autoexpand the person picker if this is an add
+            this.Page.ClientScript.RegisterStartupScript(
+                this.GetType(),
+                "StartupScript", @"Sys.Application.add_load(function () {
+
+                // if the person picker is empty then open it for quick entry
+                var personPicker = $('.js-authorizedperson');
+                var currentPerson = personPicker.find('.picker-selectedperson').html();
+                if (currentPerson != null && currentPerson.length == 0) {
+                    $(personPicker).find('a.picker-label').trigger('click');
+                }
+
+            });", true );
+            
             var rockContext = new RockContext();
             GroupMember groupMember = null;
 
             if ( !groupMemberId.Equals( 0 ) )
             {
                 groupMember = new GroupMemberService( rockContext ).Get( groupMemberId );
-                if ( groupMember != null )
-                {
-                    groupMember.LoadAttributes();
-
-                    if ( !string.IsNullOrWhiteSpace(GetAttributeValue("PersonProfilePage")) )
-                    {
-                        var personPageParams = new Dictionary<string, string>();
-                        personPageParams.Add( "PersonId", groupMember.Person.Id.ToString() );
-                        var personProfilePage = LinkedPageUrl( "PersonProfilePage", personPageParams );
-
-                        hlProfilePage.NavigateUrl = personProfilePage;
-                        hlProfilePage.Visible = true;
-                    }
-                    
-                }
             }
             else
             {

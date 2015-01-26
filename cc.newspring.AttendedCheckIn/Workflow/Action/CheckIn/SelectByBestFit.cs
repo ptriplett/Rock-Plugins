@@ -90,14 +90,19 @@ namespace cc.newspring.AttendedCheckIn.Workflow.Action.CheckIn
                                 else
                                 {
                                     CheckInGroup closestAbilityGroup = null;
-                                    // TODO: Get rid of LoadAttributes call when FilterGroupsByAbilityLevel does it for us so we can reduce DB calls
-                                    person.Person.LoadAttributes();
+
+                                    // FilterGroupsByAbilityLevel already loads the attributes on people
                                     var personsAbility = person.Person.GetAttributeValue( "AbilityLevel" );
 
-                                    if ( personsAbility != null )
+                                    if ( !string.IsNullOrWhiteSpace( personsAbility ) )
                                     {
                                         // check groups for a ability
-                                        closestAbilityGroup = validGroups.Where( g => g.Group.Attributes.ContainsKey( "AbilityLevel" ) && g.Group.GetAttributeValue( "AbilityLevel" ) == personsAbility ).FirstOrDefault();
+                                        var newGroups = validGroups.Where( g => g.Group.Attributes.ContainsKey( "AbilityLevel" ) && g.Group.GetAttributeValue( "AbilityLevel" ) == personsAbility ).ToList();
+                                        closestAbilityGroup = newGroups.FirstOrDefault();
+                                    }
+                                    else
+                                    {
+                                        validGroups = validGroups.Where( g => !g.Group.Attributes.ContainsKey( "AbilityLevel" ) ).ToList();
                                     }
 
                                     CheckInGroup closestGradeGroup = null;
@@ -117,8 +122,7 @@ namespace cc.newspring.AttendedCheckIn.Workflow.Action.CheckIn
                                         if ( gradeFilteredGroups.Count > 0 )
                                         {
                                             decimal grade = (decimal)person.Person.Grade;
-                                            closestGradeGroup = gradeFilteredGroups.Aggregate( ( x, y ) =>
-                                                Math.Abs( x.GradeRange.First() - grade ) < Math.Abs( y.GradeRange.First() - grade ) ? x : y )
+                                            closestGradeGroup = gradeFilteredGroups.Aggregate( ( x, y ) => Math.Abs( x.GradeRange.Average() - grade ) < Math.Abs( y.GradeRange.Average() - grade ) ? x : y )
                                                 .Group;
                                         }
                                     }
@@ -140,19 +144,21 @@ namespace cc.newspring.AttendedCheckIn.Workflow.Action.CheckIn
                                         if ( ageFilteredGroups.Count > 0 )
                                         {
                                             decimal age = (decimal)person.Person.AgePrecise;
-                                            closestAgeGroup = ageFilteredGroups.Aggregate( ( x, y ) =>
-                                                Math.Abs( x.AgeRange.First() - age ) < Math.Abs( y.AgeRange.First() - age ) ? x : y )
+                                            closestAgeGroup = ageFilteredGroups.Aggregate( ( x, y ) => Math.Abs( x.AgeRange.Average() - age ) < Math.Abs( y.AgeRange.Average() - age ) ? x : y )
                                                 .Group;
                                         }
                                     }
 
+                                    bestGroup = closestAbilityGroup ?? closestGradeGroup ?? closestAgeGroup ?? validGroups.FirstOrDefault();
                                     if ( roomBalanceByGroup )
-                                    {
-                                        bestGroup = validGroups.OrderBy( g => g.Locations.Select( l => KioskLocationAttendance.Read( l.Location.Id ).CurrentCount ).Sum() ).FirstOrDefault();
-                                    }
-                                    else
-                                    {
-                                        bestGroup = closestAbilityGroup ?? closestGradeGroup ?? closestAgeGroup ?? validGroups.FirstOrDefault();
+                                    {   // only one location per group should exist
+                                        var lowestCountGroup = validGroups.OrderBy( g => g.Locations.Select( l => KioskLocationAttendance.Read( l.Location.Id ).CurrentCount ).Sum() ).FirstOrDefault();
+                                        var lowCount = lowestCountGroup.Locations.Select( l => KioskLocationAttendance.Read( l.Location.Id ).CurrentCount ).FirstOrDefault();
+                                        var bestGroupCount = bestGroup.Locations.Select( l => KioskLocationAttendance.Read( l.Location.Id ).CurrentCount ).FirstOrDefault();
+                                        if ( lowCount < bestGroupCount )
+                                        {
+                                            bestGroup = lowestCountGroup;
+                                        }
                                     }
 
                                     validLocations = bestGroup.Locations.Where( l => !l.ExcludedByFilter ).ToList();
@@ -198,6 +204,7 @@ namespace cc.newspring.AttendedCheckIn.Workflow.Action.CheckIn
                                                 bestGroup.PreSelected = true;
                                                 bestGroup.Selected = true;
 
+                                                bestGroupType = validGroupTypes.FirstOrDefault( gt => gt.GroupType.Id == bestGroup.Group.GroupTypeId );
                                                 if ( bestGroupType != null )
                                                 {
                                                     bestGroupType.Selected = true;
