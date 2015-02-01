@@ -1,5 +1,4 @@
-﻿﻿// <copyright>
-
+﻿// <copyright>
 // Copyright 2013 by the Spark Development Network
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +30,7 @@ using Rock.Web.Cache;
 using Rock.Web.UI;
 using Rock.Web.UI.Controls;
 
-namespace RockWeb.Blocks.CheckIn.Attended
+namespace cc.newspring.AttendedCheckin.Config
 {
     /// <summary>
     ///
@@ -224,12 +223,26 @@ namespace RockWeb.Blocks.CheckIn.Attended
 
             ViewStateList<GroupType> groupTypeViewStateList = new ViewStateList<GroupType>();
             groupTypeViewStateList.AddAll( groupTypeList );
-
             ViewState["CheckinGroupTypes"] = groupTypeViewStateList;
+
+            // get all GroupTypes' editors to save groups and labels
+            var recursiveGroupTypeEditors = phCheckinGroupTypes.ControlsOfTypeRecursive<CheckinGroupTypeEditor>().ToList();
+
+            // save each GroupTypes' Groups to ViewState (since GroupType.Groups are not Serialized)
+            var groupTypeGroupsList = new List<Group>();
+            foreach ( var editor in recursiveGroupTypeEditors )
+            {
+                var groupType = editor.GetCheckinGroupType( rockContext );
+                groupTypeGroupsList.AddRange( groupType.Groups );
+            }
+
+            ViewStateList<Group> checkinGroupTypesGroups = new ViewStateList<Group>();
+            checkinGroupTypesGroups.AddAll( groupTypeGroupsList );
+            ViewState["CheckinGroupTypesGroups"] = checkinGroupTypesGroups;
 
             // save all the checkinlabels for all the grouptypes (recursively) to viewstate
             GroupTypeCheckinLabelAttributesState = new Dictionary<Guid, List<CheckinGroupTypeEditor.CheckinLabelAttributeInfo>>();
-            foreach ( var checkinGroupTypeEditor in phCheckinGroupTypes.ControlsOfTypeRecursive<CheckinGroupTypeEditor>().ToList() )
+            foreach ( var checkinGroupTypeEditor in recursiveGroupTypeEditors )
             {
                 GroupTypeCheckinLabelAttributesState.Add( checkinGroupTypeEditor.GroupTypeGuid, checkinGroupTypeEditor.CheckinLabels );
             }
@@ -253,8 +266,27 @@ namespace RockWeb.Blocks.CheckIn.Attended
             phCheckinGroupTypes.Controls.Clear();
             var rockContext = new RockContext();
 
+            // GroupTypeViewStateList only contains parent GroupTypes, so get all the child GroupTypes and assign their groups
             ViewStateList<GroupType> groupTypeViewStateList = ViewState["CheckinGroupTypes"] as ViewStateList<GroupType>;
+            var allGroupTypesList = groupTypeViewStateList.Flatten<GroupType>( gt => gt.ChildGroupTypes );
 
+            // load each GroupTypes' Groups from ViewState (since GroupType.Groups are not Serialized)
+            ViewStateList<Group> checkinGroupTypesGroups = ViewState["CheckinGroupTypesGroups"] as ViewStateList<Group>;
+            foreach ( var groupTypeGroups in checkinGroupTypesGroups.GroupBy( g => g.GroupType.Guid ) )
+            {
+                var groupType = allGroupTypesList.FirstOrDefault( a => a.Guid == groupTypeGroups.Key );
+
+                if ( groupType != null )
+                {
+                    groupType.Groups = new List<Group>();
+                    foreach ( var group in groupTypeGroups )
+                    {
+                        groupType.Groups.Add( group );
+                    }
+                }
+            }
+
+            // Build out Parent GroupTypes controls (Child GroupTypes controls are built recursively)
             foreach ( var groupType in groupTypeViewStateList )
             {
                 CreateGroupTypeEditorControls( groupType, phCheckinGroupTypes, rockContext );
@@ -271,7 +303,7 @@ namespace RockWeb.Blocks.CheckIn.Attended
         private void CreateGroupTypeEditorControls( GroupType groupType, Control parentControl, RockContext rockContext, bool createExpanded = false )
         {
             CheckinGroupTypeEditor groupTypeEditor = new CheckinGroupTypeEditor();
-            groupTypeEditor.ID = string.Format( "GroupTypeEditor_{0}", groupType.Guid.ToString( "N" ) );
+            groupTypeEditor.ID = "GroupTypeEditor_" + groupType.Guid.ToString( "N" );
             groupTypeEditor.SetGroupType( groupType.Id, groupType.Guid, groupType.Name, groupType.InheritedGroupTypeId );
             groupTypeEditor.AddGroupClick += groupTypeEditor_AddGroupClick;
             groupTypeEditor.AddGroupTypeClick += groupTypeEditor_AddGroupTypeClick;
@@ -462,13 +494,12 @@ namespace RockWeb.Blocks.CheckIn.Attended
         private void CreateGroupEditorControls( Group group, Control parentControl, RockContext rockContext, bool createExpanded = false )
         {
             CheckinGroupEditor groupEditor = new CheckinGroupEditor();
-            groupEditor.ID = string.Format( "GroupEditor_{0}", group.Guid.ToString( "N" ) );
+            groupEditor.ID = "GroupEditor_" + group.Guid.ToString( "N" );
             if ( createExpanded )
             {
                 groupEditor.Expanded = true;
             }
 
-            parentControl.Controls.Add( groupEditor );
             groupEditor.SetGroup( group, rockContext );
             var locationService = new LocationService( rockContext );
             var locationQry = locationService.Queryable().Select( a => new { a.Id, a.ParentLocationId, a.Name } );
@@ -496,6 +527,7 @@ namespace RockWeb.Blocks.CheckIn.Attended
             groupEditor.AddLocationClick += groupEditor_AddLocationClick;
             groupEditor.DeleteLocationClick += groupEditor_DeleteLocationClick;
             groupEditor.DeleteGroupClick += groupEditor_DeleteGroupClick;
+            parentControl.Controls.Add( groupEditor );
         }
 
         /// <summary>
@@ -1006,6 +1038,7 @@ namespace RockWeb.Blocks.CheckIn.Attended
             int groupTypeSortOrder = 0;
             int groupSortOrder = 0;
             var parentGroup = groupTypeUI.Groups.FirstOrDefault();
+
             foreach ( var childGroupTypeUI in groupTypeUI.ChildGroupTypes )
             {
                 PopulateAddUpdateLists( groupTypesToAddUpdate, groupsToAddUpdate, childGroupTypeUI, createCheckinHierarchy );

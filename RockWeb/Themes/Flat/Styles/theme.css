@@ -194,6 +194,7 @@ img.jcrop-preview {
   border-radius: 3px;
   float: left;
   width: 100%;
+  z-index: 1049;
 }
 .zone-configuration {
   background: #18bc9c;
@@ -241,7 +242,7 @@ img.jcrop-preview {
   position: absolute;
   top: 2px;
   width: 26px;
-  z-index: 1000;
+  z-index: 1049;
 }
 .block-instance.outline {
   min-height: 36px;
@@ -390,6 +391,7 @@ img.jcrop-preview {
 }
 .modal-content .modal-body {
   color: #2c3e50;
+  text-align: left;
 }
 .modal-content .modal-body .nav-pills {
   margin: 6px 0 18px;
@@ -604,40 +606,38 @@ img.jcrop-preview {
   width: 340px;
   height: 190px;
 }
-.banner {
-  color: #ffffff;
-  background-color: #18bc9c;
-  border-radius: 0;
-  border: 0 solid transparent;
-  font-weight: 300;
-  font-size: 14px;
-  padding: 4px 12px;
-  margin: 0 0 15px;
-}
-.banner:before,
-.banner:after {
-  content: " ";
-  display: table;
-}
-.banner:after {
-  clear: both;
-}
-.banner h1 {
-  float: left;
-  margin: 0;
-  font-weight: 300;
-}
-.banner h1 .first-word {
-  font-weight: 700;
-}
-.banner h1 i {
-  margin-right: 15px;
-}
-.banner .label {
-  float: right;
-  margin-top: 15px;
-  margin-left: 15px;
-}
+/*.banner
+{
+    color: @banner-text-color;
+    background-color: @banner-bg;
+    border-radius: @banner-border-radius;
+    border: @banner-border-size solid @banner-border-color;
+    font-weight: @banner-font-weight;
+    font-size: @banner-font-size;
+    padding: @banner-padding;
+    margin: 0 0 @spacing-md-px;
+    .clearfix;
+
+    h1 {
+        float: left;
+        margin: 0;
+        font-weight: @banner-font-weight;
+
+        .first-word {
+            font-weight: @banner-firstword-weight;
+        }
+
+        i {
+            margin-right: @spacing-md-px;
+        }
+    }
+
+    .label {
+        float: right;
+        margin-top: @spacing-md-px;
+        margin-left: @spacing-md-px;
+    }
+}*/
 ul.rocktree,
 ul.rocktree ul {
   list-style-type: none;
@@ -1115,12 +1115,13 @@ div.tagsinput .tags_clear {
 fieldset .actions {
   margin-top: 12px;
 }
-.title {
-  font-weight: 300;
-}
-.title .first-word {
-  font-weight: 700;
-}
+/*.title {
+    font-weight: @title-default-weight;
+
+    .first-word {
+        font-weight: @title-firstword-weight;
+    }
+}*/
 .code-editor {
   position: relative;
 }
@@ -1128,7 +1129,7 @@ fieldset .actions {
   background-color: #83758f;
 }
 .label-type {
-  background-color: #1bd3af;
+  background-color: #567d8c;
 }
 .label-communicationstatus-approved {
   background-color: #18bc9c;
@@ -1143,7 +1144,7 @@ fieldset .actions {
   background-color: #f39c12;
 }
 .label-communicationstatus-transient {
-  background-color: #1bd3af;
+  background-color: #567d8c;
 }
 .datepicker {
   padding: 10px;
@@ -4091,10 +4092,12 @@ iframe.email-body {
   -webkit-user-select: none;
 }
 /*
-    Used to provide extensible classes for plugin developers to use to help them match the themes they are running in
-    
-    1. Colors - creates utility classes for each of the accent colors
-    2. Spacing - provides utility classes for spacing based off of the themes gutter widths
+
+  Used to provide extensible classes for plugin developers to use to help them match the themes they are running in
+
+  1. Variables - specific variables for sizing classes and media query helpers
+  2. Colors - creates utility classes for each of the accent colors
+  3. Spacing - provides utility classes for spacing based off of the themes gutter widths
 
 */
 .accent-color {
@@ -5379,12 +5382,6 @@ html[xmlns] .slides {
     */
 main {
   display: block;
-}
-img {
-  display: block;
-  width: 100% \9;
-  max-width: 100%;
-  height: auto;
 }
 .navbar {
   position: static;
